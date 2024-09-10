@@ -130,6 +130,66 @@ If we refresh the page, we should see the IP address from the other instance in 
 
 
 ## Conclusion
- 
-Congratulations! You have successfully deployed a three-tier architecture on AWS using Terraform. This architecture provides a scalable and highly available infrastructure for your applications. Make sure to follow AWS best practices and security recommendations when deploying your production workloads.
+We have successfully deployed a three-tier architecture on AWS using Terraform. This architecture provides a scalable and highly available infrastructure for your applications. 
+
+The primary objectives are to ensure that the architecture complies with the following additional key
+requirements:
+Key Requirements:
+## 1. Multi-tier architecture comprising front-end, backend, and database layers.
+This architecture comprising front-end, backend and RDS layers in different subnets and 2 different AZ located in one vpc 10.0.0.0/24
+
+## 2. Connectivity with a shared services VPC having 10.0.0.0/24 CIDR
+All components are in different subnets and 2 different AZ located in one vpc 10.0.0.0/24
+public subnet 10.0.0.0/27 and 10.0.0.32/27
+10.0.0.0/27  az1 possible frontend and possible LB
+10.0.0.32/27  az2  possible frontend and possible LB
+
+private subnet 10.0.0.64/27 and 10.0.0.96/27
+10.0.0.64/27  az1 backend and possible frontend
+10.0.0.96/27  az2 backend and possible frontend
+
+frontend we could put in the public subnet which may have public IP or public access.  From security perspective, we can also put them in the private subnet as long as the frontend LB is in the public subnet.
+
+private DB subnet 10.0.0.128/27 and 10.0.0.160/27
+leave it for RDS and multi-az rds
+
+
+## 3. The web application must be highly available to ensure uninterrupted service delivery even during infrastructure failures.
+
+web application has a frontend LB enabled, check the screenshot. The LB is associated with the launch template and ASG
+
+## 4. The infrastructure should be able to handle sudden spikes in traffic without any degradation in performance.
+The web LB is associated with the launch template and ASG, which can be dynamically scaled out or in depending on the workload and traffic.
+
+
+## 5. Design robust security measures to safeguard sensitive data and protect against potential cyber threats.
+frontend we could put in the public subnet which may have public IP or public access.  From security perspective, we can also put them in the private subnet as long as the frontend LB is in the public subnet.
+All public access ports are open only to 22 and port 80 on the LB
+All outgoing traffic or egress traffic has been done through NAT gateway for private subnets and DB subnets.
+ssh-key is in place.
+SG is in place 
+
+
+## 6. Design a comprehensive cross region disaster recovery plan [4 hours of RTO and 30 min of RPO] to mitigate the impact of unforeseen disasters on the application.
+
+2 vpc can be peered to cross-region or vpn/direct connect to ensure the network. or we can use global load balancer (aws global accelerator) to route the traffic. 
+for web tier we can setup cross-region failover to india region from us-east-1. dns failover (health check or weighted dns) with route 53 can be leveraged. Also elastic load balancer can be setup for both primary and secondary region. 
+Application tier, a regional load balancer can be helpful or be paireed with the global load balancer for cross-region-routing
+for database tier,  use the multip-region database solution (for aws rds/aurora)to have the DR  and automated failover between region.
+cross-region data replication can be done. DB Backup also can be implemented regularly in both regions, ensuring point-in-time recovery (PITR) with backup stored across regions
+The last for s3 bucket/EFS we also can use cross-region replication or aws datasync to replicate efs to another region.
+
+## 7. Secure remote access to servers for troubleshooting/administration.
+
+remote ssh access to the bastion is enabled and tested. It can be used as the jumpbox to access internally.
+
+## 8. Design required monitoring and loggings components for the migrated web application.
+
+AWS cloudwatch can be added to the terraform (presently it's not implemented). to actively mornitor the Metrics for EC2, ELB, RDS, ASG etc.
+Amazon cloudtrail, vpc flow logs and aws WAF/Shield logs can be leveraged to log all components and services. 
+
+## 9. Ensure that app server logs are centrally aggregated.
+
+We can use amazon cloudwatch logs to log all components logs to a dedicated aws account (under security OU)
+Also we can send logs to a log dedicated s3 via cloudwatch
 
