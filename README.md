@@ -193,3 +193,27 @@ Amazon cloudtrail, vpc flow logs and aws WAF/Shield logs can be leveraged to log
 We can use amazon cloudwatch logs to log all components logs to a dedicated aws account (under security OU)
 Also we can send logs to a log dedicated s3 via cloudwatch
 
+## Pipeline used
+
+The repository includes a GitHub Pages workflow that publishes the repository
+root on pushes to `main`. It does not automatically provision AWS resources.
+Infrastructure delivery is a reviewed, manual Terraform pipeline from the
+`terraform/` directory:
+
+```bash
+terraform fmt -check
+terraform init
+terraform validate
+terraform plan
+terraform apply
+```
+
+Use AWS credentials and a configured backend before planning or applying. Keep
+Terraform state, credentials, and database passwords out of source control.
+
+## Usage
+
+Start with `terraform/variables.tf`, configure the AWS account and backend, and
+review the plan before applying. The load balancer output is the application
+entry point. Remove the environment with `terraform destroy` when it is no
+longer needed.
